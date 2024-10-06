@@ -1,5 +1,6 @@
 #include "../include/headers/openal_setup.h"
 #include "../include/headers/portaudio_setup.h"
+#include "../include/headers/cli_interface.h"
 #include <iostream>
 #include <conio.h>
 #include <stdexcept>
@@ -10,6 +11,42 @@ void debugMessage(const std::string& message) {
 }
 
 int main() {
+    CLIInterface cli;
+    PortAudioSetup paSetup;
+
+    // Get input and output devices
+    std::vector<std::string> outputDevices = paSetup.getOutputDevices();
+    std::vector<std::string> inputDevices = paSetup.getInputDevices();
+
+    if (inputDevices.empty() || outputDevices.empty()) {
+        std::cout << "No input or output devices available!" << std::endl;
+        return -1;
+    }
+
+    // Select input device
+    cli.displayDevices(inputDevices, "Input");
+    int inputDeviceIndex = cli.getUserDeviceChoice();
+    if (inputDeviceIndex < 0 || inputDeviceIndex >= inputDevices.size()) {
+        std::cout << "Invalid input device choice!" << std::endl;
+        return -1;
+    }
+    cli.showSelectedDevice(inputDevices[inputDeviceIndex], "Input");
+
+    // Select output device
+    cli.displayDevices(outputDevices, "Output");
+    int outputDeviceIndex = cli.getUserDeviceChoice();
+    if (outputDeviceIndex < 0 || outputDeviceIndex >= outputDevices.size()) {
+        std::cout << "Invalid output device choice!" << std::endl;
+        return -1;
+    }
+    cli.showSelectedDevice(outputDevices[outputDeviceIndex], "Output");
+
+    // Set devices for routing
+    paSetup.setDevices(inputDeviceIndex, outputDeviceIndex);
+
+    // Start audio stream (this method now keeps the stream open until Enter is pressed)
+    paSetup.startAudioStream();
+
     unsigned int sampleRate;
     std::string hrtfFilePath = "C:\\Users\\Sagar\\Documents\\Projects\\AudioApp\\surroundVirtualizer\\lib\\OpenALlibs\\share\\openal\\hrtf\\Default HRTF.mhr"; // Corrected path
 
