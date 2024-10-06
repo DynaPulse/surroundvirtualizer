@@ -4,14 +4,28 @@ cmake_minimum_required(VERSION 3.25)
 project(SurroundVirtualizer VERSION 1.0)
 
 # Set C++ standard
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# Set CMAKE_PREFIX_PATH to help find the libraries
+set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/lib/PortAudioLibs;${PROJECT_SOURCE_DIR}/lib/OpenALlibs")
+
 # Include directories
-include_directories(${PROJECT_SOURCE_DIR}/include/imports)
-include_directories(${PROJECT_SOURCE_DIR}/include/headers)
-include_directories(${PROJECT_SOURCE_DIR}/lib/PortAudioLibs/include)
-include_directories(${PROJECT_SOURCE_DIR}/lib/OpenALlibs/include)
+include_directories(SurroundVirtualizer PRIVATE
+    ${PROJECT_SOURCE_DIR}/include/imports
+    ${PROJECT_SOURCE_DIR}/include/headers
+    ${PROJECT_SOURCE_DIR}/lib/PortAudioLibs/include
+    ${PROJECT_SOURCE_DIR}/lib/OpenALlibs/include
+)
+
+# Add header files
+set(HEADERS
+    include/headers/openal_setup.h
+    include/headers/portaudio_setup.h
+    include/headers/hrtf_library.h
+    include/headers/hrtf_processor.h
+    include/headers/cli_interface.h
+)
 
 # Add source files
 set(SOURCES
@@ -20,6 +34,7 @@ set(SOURCES
     src/portaudio_setup.cpp
     src/hrtf_library.cpp
     src/hrtf_processor.cpp
+    src/cli_interface.cpp
 )
 
 # Find PortAudio
@@ -32,13 +47,6 @@ endif()
 set(PORTAUDIO_LIBRARIES ${PortAudio_LIBRARIES})
 set(PORTAUDIO_DLL "${PROJECT_SOURCE_DIR}/lib/PortAudioLibs/bin/portaudio_x64.dll")
 
-# Add OpenAL library path explicitly
-set(OPENAL_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/lib/OpenALlibs/include")
-set(OPENAL_LIBRARY "${PROJECT_SOURCE_DIR}/lib/OpenALlibs/lib/OpenAL32.lib")
-
-# Include OpenAL directories
-include_directories(${OPENAL_INCLUDE_DIR})
-
 # Find OpenAL
 find_package(OpenAL REQUIRED)
 if (NOT OpenAL_FOUND)
@@ -46,7 +54,7 @@ if (NOT OpenAL_FOUND)
 endif()
 
 # Add executable
-add_executable(SurroundVirtualizer ${SOURCES} "include/headers/hrtf_library.h" "src/hrtf_library.cpp" "include/headers/hrtf_processor.h" "src/hrtf_processor.cpp")
+add_executable(SurroundVirtualizer ${SOURCES})
 
 # Link libraries
 target_link_libraries(SurroundVirtualizer

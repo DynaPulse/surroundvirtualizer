@@ -1,6 +1,6 @@
 //openal_setup.cpp
 
-#include "../include/headers/openal_setup.h"
+#include "openal_setup.h"
 
 //ALCdevice* initOpenAL(ALCcontext*& context, ALuint& source, ALuint& buffer) {
 //    // OpenAL setup

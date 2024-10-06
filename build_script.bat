@@ -2,19 +2,27 @@
 setlocal
 
 REM Step 1: Remove the build directory if it exists
-echo Removing build directory...
-rmdir /s /q .\build
-if ERRORLEVEL 1 (
-    echo Failed to remove build directory. Exiting...
-    exit /b 1
+if exist .\build (
+    echo Removing build directory...
+    rmdir /s /q .\build
+    if ERRORLEVEL 1 (
+        echo Failed to remove build directory. Exiting...
+        exit /b 1
+    )
+) else (
+    echo Build directory not found. Skipping removal.
 )
 
 REM Step 2: Remove the install directory if it exists
-echo Removing install directory...
-rmdir /s /q .\install_app
-if ERRORLEVEL 1 (
-    echo Failed to remove install_app directory. Exiting...
-    exit /b 1
+if exist .\install_app (
+    echo Removing install_app directory...
+    rmdir /s /q .\install_app
+    if ERRORLEVEL 1 (
+        echo Failed to remove install_app directory. Exiting...
+        exit /b 1
+    )
+) else (
+    echo Install directory not found. Skipping removal.
 )
 
 REM Step 3: Create a new build directory
