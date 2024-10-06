@@ -1,3 +1,4 @@
-/build
-/install_app
-/out
+build/
+install_app/
+*-out
+.vs**
