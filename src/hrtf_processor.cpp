@@ -1,40 +1,39 @@
-//hrtf_processor.cpp
-
+// hrtf_processor.cpp
 #include "hrtf_processor.h"
-#include <fstream>
 #include <iostream>
+#include <fstream>
 
-// Constructor
-HRTFProcessor::HRTFProcessor() {}
-
-// Load HRTF data from file
-bool HRTFProcessor::loadHRTF(const std::string& filePath) {
-    return parseHRTFFile(filePath);
+HRTFProcessor::HRTFProcessor(const std::string& filePath) {
+    loadHRTFData(filePath);
 }
 
-// Parse HRTF file (dummy implementation, replace with actual logic)
-bool HRTFProcessor::parseHRTFFile(const std::string& filePath) {
-    std::ifstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "[ERROR] Failed to open HRTF file: " << filePath << std::endl;
-        return false;
+HRTFProcessor::~HRTFProcessor() {}
+
+void HRTFProcessor::loadHRTFData(const std::string& filePath) {
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file) {
+        std::cerr << "Failed to load HRTF data." << std::endl;
+        return;
     }
 
-    // Load HRTF data (this is just an example; replace with actual parsing)
-    hrtfDataLeft = { 1.0f, 0.8f, 0.6f };  // Dummy data
-    hrtfDataRight = { 1.0f, 0.8f, 0.6f }; // Dummy data
-
-    std::cout << "[DEBUG] HRTF file parsed successfully." << std::endl;
-    return true;
+    float value;
+    while (file.read(reinterpret_cast<char*>(&value), sizeof(float))) {
+        std::vector<float> hrtfSample(2, value); // Left and Right ear coefficients
+        hrtfData.push_back(hrtfSample);
+    }
 }
 
-// Apply HRTF to audio sample (replace with actual processing logic)
-float HRTFProcessor::applyHRTF(float sample, int channel) {
-    // Dummy HRTF processing: just attenuating the signal
-    if (channel == 0) { // Left channel
-        return sample * hrtfDataLeft[0];
-    }
-    else {            // Right channel
-        return sample * hrtfDataRight[0];
+void HRTFProcessor::processAudio(const std::vector<float>& input, std::vector<float>& output) {
+    output.clear();
+    for (size_t i = 0; i < input.size(); i += 8) { // Process 8-channel input to 2-channel output
+        float left = 0.0f, right = 0.0f;
+        for (size_t j = 0; j < 8 && (i + j) < input.size(); ++j) {
+            if (j < hrtfData.size()) {
+                left += input[i + j] * hrtfData[j][0];
+                right += input[i + j] * hrtfData[j][1];
+            }
+        }
+        output.push_back(left);
+        output.push_back(right);
     }
 }

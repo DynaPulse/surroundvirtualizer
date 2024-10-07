@@ -1,42 +1,59 @@
-//openal_setup.cpp
-
+// openal_setup.cpp
 #include "openal_setup.h"
+#include <AL/alext.h>
+#include <iostream>
 
-ALCdevice* initOpenAL(ALCcontext*& context, ALuint& source, ALuint& buffer) {
-    ALCdevice* device = alcOpenDevice(NULL); // Default audio device
-    if (!device) {
-        std::cerr << "Failed to open audio device" << std::endl;
-        return nullptr;
-    }
+OpenALSetup::OpenALSetup() : device(nullptr), context(nullptr) {}
 
-    context = alcCreateContext(device, NULL);
-    if (!context || !alcMakeContextCurrent(context)) {
-        std::cerr << "Failed to create or make context current" << std::endl;
-        alcCloseDevice(device);
-        return nullptr;
-    }
-
-    // Enable HRTF (Head-Related Transfer Function)
-    ALCint hrtfEnabled;  // Change ALboolean to ALCint
-    alcGetIntegerv(device, ALC_HRTF_SOFT, 1, &hrtfEnabled);  // Use ALCint pointer
-    if (hrtfEnabled == ALC_TRUE) {
-        std::cout << "HRTF is enabled!" << std::endl;
-    }
-    else {
-        std::cerr << "HRTF is not enabled!" << std::endl;
-    }
-
-    // Generate OpenAL source and buffer
-    alGenSources(1, &source);
-    alGenBuffers(1, &buffer);
-
-    return device;
+OpenALSetup::~OpenALSetup() {
+    cleanup();
 }
 
-void cleanupOpenAL(ALCdevice* device, ALCcontext* context, ALuint source, ALuint buffer) {
-    alDeleteSources(1, &source);
-    alDeleteBuffers(1, &buffer);
-    alcMakeContextCurrent(NULL);
-    alcDestroyContext(context);
-    alcCloseDevice(device);
+bool OpenALSetup::initialize(const std::string& hrtfFilePath, const std::string& deviceName) {
+    device = alcOpenDevice(deviceName.empty() ? nullptr : deviceName.c_str()); // Open specified audio device or default
+    if (!device) {
+        std::cerr << "Failed to open audio device: " << (deviceName.empty() ? "default" : deviceName) << std::endl;
+        return false;
+    }
+
+    // Check if HRTF extension is available
+    if (alcIsExtensionPresent(device, "ALC_SOFT_HRTF")) {
+        std::cout << "HRTF extension is available." << std::endl;
+    }
+    else {
+        std::cerr << "HRTF extension is not available." << std::endl;
+    }
+
+    // Set attributes for context creation, including enabling HRTF if available
+    ALCint attr[] = { ALC_HRTF_SOFT, ALC_TRUE, 0 };
+    context = alcCreateContext(device, attr);
+    if (!context || !alcMakeContextCurrent(context)) {
+        std::cerr << "Failed to create or make context current." << std::endl;
+        cleanup();
+        return false;
+    }
+
+    // Confirm if HRTF was successfully enabled
+    ALCint hrtfStatus;
+    alcGetIntegerv(device, ALC_HRTF_SOFT, 1, &hrtfStatus);
+    if (hrtfStatus == ALC_TRUE) {
+        std::cout << "HRTF is enabled successfully." << std::endl;
+    }
+    else {
+        std::cerr << "Failed to enable HRTF." << std::endl;
+    }
+
+    return true;
+}
+
+void OpenALSetup::cleanup() {
+    if (context) {
+        alcMakeContextCurrent(nullptr);
+        alcDestroyContext(context);
+        context = nullptr;
+    }
+    if (device) {
+        alcCloseDevice(device);
+        device = nullptr;
+    }
 }

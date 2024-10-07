@@ -8,19 +8,11 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include "../lib/PortAudioLibs/include/portaudio.h"
+#include "../lib/OpenALlibs/include/AL/al.h"
+#include "../lib/OpenALlibs/include/AL/alc.h"
 
-class HRTFLibrary {
-public:
-    HRTFLibrary();
-    ~HRTFLibrary();
+bool loadHRTF(const std::string& path);
 
-    bool loadHRTF(const std::string& filePath);
-    void applyHRTF(float* input, float* output, unsigned long framesPerBuffer);
-
-private:
-    std::vector<float> leftEar; // HRTF for left ear
-    std::vector<float> rightEar; // HRTF for right ear
-    unsigned int hrtfLength; // Length of the HRTF
-};
 
 #endif // HRTF_LIBRARY_H

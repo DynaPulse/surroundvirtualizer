@@ -1,98 +1,74 @@
-#include "../include/headers/openal_setup.h"
-#include "../include/headers/portaudio_setup.h"
-#include "../include/headers/cli_interface.h"
+// main.cpp
+#include "openal_setup.h"
+#include "portaudio_setup.h"
+#include "cli_interface.h"
+#include "hrtf_processor.h"
 #include <iostream>
-#include <conio.h>
-#include <stdexcept>
-
-// Function to print debug messages
-void debugMessage(const std::string& message) {
-    std::cout << "[DEBUG] " << message << std::endl;
-}
+#include <vector>
 
 int main() {
     CLIInterface cli;
-    PortAudioSetup paSetup;
+    cli.displayMenu();
+    cli.listPlaybackDevices();
+    auto deviceList = cli.getAvailablePlaybackDevices();
+    int selectedDeviceIndex = cli.getSelectedDeviceIndex(deviceList);
+    if (selectedDeviceIndex == -1) {
+        return -1;
+    }
+    std::string hrtfFilePath = cli.getHRTFFilePath();
 
-    // Get input and output devices
-    std::vector<std::string> outputDevices = paSetup.getOutputDevices();
-    std::vector<std::string> inputDevices = paSetup.getInputDevices();
-
-    if (inputDevices.empty() || outputDevices.empty()) {
-        std::cout << "No input or output devices available!" << std::endl;
+    // Initialize OpenAL for spatial audio processing
+    OpenALSetup openAL;
+    if (!openAL.initialize(hrtfFilePath, deviceList[selectedDeviceIndex])) {
+        std::cerr << "Error: Failed to initialize OpenAL with HRTF." << std::endl;
         return -1;
     }
 
-    // Select input device
-    cli.displayDevices(inputDevices, "Input");
-    int inputDeviceIndex = cli.getUserDeviceChoice();
-    if (inputDeviceIndex < 0 || inputDeviceIndex >= inputDevices.size()) {
-        std::cout << "Invalid input device choice!" << std::endl;
+    // Initialize PortAudio for capturing and playback
+    PortAudioSetup portAudio;
+    if (!portAudio.initialize(8, 2, selectedDeviceIndex)) { // 8 input channels (7.1.4), 2 output channels (stereo)
+        std::cerr << "Error: Failed to initialize PortAudio." << std::endl;
         return -1;
     }
-    cli.showSelectedDevice(inputDevices[inputDeviceIndex], "Input");
 
-    // Select output device
-    cli.displayDevices(outputDevices, "Output");
-    int outputDeviceIndex = cli.getUserDeviceChoice();
-    if (outputDeviceIndex < 0 || outputDeviceIndex >= outputDevices.size()) {
-        std::cout << "Invalid output device choice!" << std::endl;
-        return -1;
+    // Load the HRTF Processor with the provided HRTF file
+    HRTFProcessor hrtfProcessor(hrtfFilePath);
+
+    // Buffers for input and output audio
+    float inputBuffer[256 * 8]; // 8 channels
+    float outputBuffer[256 * 2]; // 2 channels
+    PaStream* stream = portAudio.getStream();
+
+    // Real-time processing loop
+    while (true) {
+        PaError err = Pa_ReadStream(stream, inputBuffer, 256);
+        if (err != paNoError) {
+            std::cerr << "Error: Failed to read from input stream: " << Pa_GetErrorText(err) << std::endl;
+            break;
+        }
+
+        // Convert the input buffer to a vector for processing
+        std::vector<float> input(inputBuffer, inputBuffer + 256 * 8);
+        std::vector<float> output;
+
+        // Process the audio using HRTFProcessor
+        hrtfProcessor.processAudio(input, output);
+
+        // Convert the output vector back to the output buffer
+        for (size_t i = 0; i < output.size(); ++i) {
+            outputBuffer[i] = output[i];
+        }
+
+        err = Pa_WriteStream(stream, outputBuffer, 256);
+        if (err != paNoError) {
+            std::cerr << "Error: Failed to write to output stream: " << Pa_GetErrorText(err) << std::endl;
+            break;
+        }
     }
-    cli.showSelectedDevice(outputDevices[outputDeviceIndex], "Output");
 
-    // Set devices for routing
-    paSetup.setDevices(inputDeviceIndex, outputDeviceIndex);
-
-    // Start audio stream (this method now keeps the stream open until Enter is pressed)
-    paSetup.startAudioStream();
-
-    unsigned int sampleRate;
-    std::string hrtfFilePath = "C:\\Users\\Sagar\\Documents\\Projects\\AudioApp\\surroundVirtualizer\\lib\\OpenALlibs\\share\\openal\\hrtf\\Default HRTF.mhr"; // Corrected path
-
-    debugMessage("Starting application...");
-
-    // Initialize PortAudio
-    debugMessage("Initializing PortAudio...");
-    if (!initializePortAudio(&sampleRate)) {
-        throw std::runtime_error("PortAudio initialization failed!");
-    }
-    debugMessage("PortAudio initialized with sample rate: " + std::to_string(sampleRate));
-
-    // Initialize HRTF
-    debugMessage("Initializing HRTF with file: " + hrtfFilePath);
-    HRTFProcessor hrtfProcessor;
-    if (!hrtfProcessor.loadHRTF(hrtfFilePath)) {
-        throw std::runtime_error("HRTF initialization failed!");
-    }
-    debugMessage("HRTF initialized successfully.");
-
-    // Open audio stream
-    debugMessage("Opening audio stream...");
-    PaStream* stream = openAudioStream(sampleRate, &hrtfProcessor); // Passing HRTFProcessor to audio callback
-    if (!stream) {
-        throw std::runtime_error("Failed to open audio stream!");
-    }
-    debugMessage("Audio stream opened successfully.");
-
-    // Start audio stream
-    debugMessage("Starting audio stream...");
-    PaError err = Pa_StartStream(stream);
-    if (err != paNoError) {
-        throw std::runtime_error(std::string("PortAudio error: ") + Pa_GetErrorText(err));
-    }
-    debugMessage("Audio stream started.");
-
-    std::cout << "Running audio application..." << std::endl;
-    std::cout << "Press Enter to exit..." << std::endl;
-
-    // Wait for user input
-    std::cin.get();
-
-    // Clean up
-    debugMessage("Cleaning up audio resources...");
-    cleanupPortAudio(stream);
-    debugMessage("Exiting application.");
+    // Cleanup PortAudio and OpenAL
+    portAudio.cleanup();
+    openAL.cleanup();
 
     return 0;
 }

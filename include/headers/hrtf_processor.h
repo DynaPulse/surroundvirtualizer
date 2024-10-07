@@ -1,22 +1,19 @@
-//hrtf_processor.h
-
+// hrtf_processor.h
 #ifndef HRTF_PROCESSOR_H
 #define HRTF_PROCESSOR_H
 
-#include <string>
 #include <vector>
+#include <string>
 
 class HRTFProcessor {
 public:
-    HRTFProcessor();
-    bool loadHRTF(const std::string& filePath);
-    float applyHRTF(float sample, int channel);
+    HRTFProcessor(const std::string& filePath);
+    ~HRTFProcessor();
+    void processAudio(const std::vector<float>& input, std::vector<float>& output);
 
 private:
-    std::vector<float> hrtfDataLeft;  // HRTF data for left ear
-    std::vector<float> hrtfDataRight; // HRTF data for right ear
-
-    bool parseHRTFFile(const std::string& filePath);
+    void loadHRTFData(const std::string& filePath);
+    std::vector<std::vector<float>> hrtfData;
 };
 
 #endif // HRTF_PROCESSOR_H
