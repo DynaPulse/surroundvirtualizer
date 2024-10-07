@@ -1,18 +1,19 @@
 // cli_interface.h
-
 #ifndef CLI_INTERFACE_H
 #define CLI_INTERFACE_H
 
-#include <iostream>
-#include <vector>
 #include <string>
-#include "portaudio_setup.h"
+#include <vector>
 
 class CLIInterface {
 public:
-    void displayDevices(const std::vector<std::string>& devices, const std::string& deviceType);
-    int getUserDeviceChoice();
-    void showSelectedDevice(const std::string& deviceName, const std::string& deviceType);
+    CLIInterface();
+    ~CLIInterface();
+    void displayMenu();
+    int getSelectedDeviceIndex(const std::vector<std::string>& deviceList);
+    std::string getHRTFFilePath();
+    void listPlaybackDevices();
+    std::vector<std::string> getAvailablePlaybackDevices();
 };
 
-#endif
+#endif // CLI_INTERFACE_H

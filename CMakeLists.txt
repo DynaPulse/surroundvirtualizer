@@ -22,7 +22,6 @@ include_directories(SurroundVirtualizer PRIVATE
 set(HEADERS
     include/headers/openal_setup.h
     include/headers/portaudio_setup.h
-    include/headers/hrtf_library.h
     include/headers/hrtf_processor.h
     include/headers/cli_interface.h
 )
@@ -32,7 +31,6 @@ set(SOURCES
     app/main.cpp
     src/openal_setup.cpp
     src/portaudio_setup.cpp
-    src/hrtf_library.cpp
     src/hrtf_processor.cpp
     src/cli_interface.cpp
 )
