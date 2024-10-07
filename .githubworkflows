@@ -17,13 +17,17 @@ jobs:
       - name: Set up CodeQL
         uses: github/codeql-action/setup-codeql@v1
         with:
-          languages: c++
+          languages: c-cpp
+          build-mode: manual
 
       - name: Set up build environment
         run: |
           choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --yes
           choco install visualstudio2019community --packageparameters "--add Microsoft.VisualStudio.Workload.ManagedDesktop" --yes
           choco install visualstudio2019buildtools --yes
+
+    - name: Set up MSBuild
+      uses: microsoft/setup-msbuild@v1
 
       - name: Build
         run: |
