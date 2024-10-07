@@ -1,4 +1,33 @@
+# Build directories
 build/
 install_app/
-*-out
-.vs**
+out/
+
+# Visual Studio and IDE-related files
+.vs/
+.vscode/
+.idea/
+*.user
+
+# Compiled binaries and intermediate files
+*.o
+*.obj
+*.exe
+*.dll
+*.lib
+*.a
+*.so
+*.pdb
+
+# Logs
+*.log
+
+# Generated files by CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Git-related metadata
+.git/
+.githubworkflows
