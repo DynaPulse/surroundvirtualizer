@@ -15,6 +15,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/include/headers
     ${PROJECT_SOURCE_DIR}/lib/PortAudioLibs/include
     ${PROJECT_SOURCE_DIR}/lib/OpenALlibs/include
+    ${PROJECT_SOURCE_DIR}/src
 )
 
 # Add header and source files
@@ -23,6 +24,7 @@ set(HEADERS
     ${PROJECT_SOURCE_DIR}/include/headers/portaudio_setup.h
     ${PROJECT_SOURCE_DIR}/include/headers/hrtf_processor.h
     ${PROJECT_SOURCE_DIR}/include/headers/cli_interface.h
+    ${PROJECT_SOURCE_DIR}/include/headers/logging.h
 )
 
 set(SOURCES
