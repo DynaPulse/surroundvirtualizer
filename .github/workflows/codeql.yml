@@ -59,13 +59,15 @@ jobs:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
 
-    - name: Build (CMake + Ninja)
+    - name: Build (CMake + MinGW)
       if: matrix.build-mode == 'manual'
       run: |
         mkdir build
         cd build
-        cmake -G "Ninja" ..
-        cmake --build . --config Release
+        $env:CC = "gcc"
+        $env:CXX = "g++"
+        cmake -G "MinGW Makefiles" -DCMAKE_C_COMPILER=$env:CC -DCMAKE_CXX_COMPILER=$env:CXX ..
+        mingw32-make
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3

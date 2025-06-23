@@ -30,8 +30,8 @@ public:
      */
     int getSelectedDeviceIndex(const std::vector<std::string>& deviceList);
     /**
-     * @brief Prompts the user to enter the HRTF file path.
-     * @return The entered HRTF file path.
+     * @brief Returns the default HRTF file path from the repository.
+     * @return The default HRTF file path.
      */
     std::string getHRTFFilePath();
     /**
