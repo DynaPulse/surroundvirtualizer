@@ -72,6 +72,13 @@ jobs:
       with:
         category: "/language:${{matrix.language}}"
 
+    - name: Ensure install_app/bin exists
+      run: |
+        $dest = "${{ github.workspace }}/install_app/bin"
+        if (-not (Test-Path $dest)) {
+          New-Item -ItemType Directory -Path $dest -Force | Out-Null
+        }
+
     - name: Copy OpenAL32.dll
       run: |
         if (Test-Path "${{ github.workspace }}/lib/OpenALlibs/bin/OpenAL32.dll") {
