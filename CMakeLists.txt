@@ -15,7 +15,6 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/include/headers
     ${PROJECT_SOURCE_DIR}/lib/PortAudioLibs/include
     ${PROJECT_SOURCE_DIR}/lib/OpenALlibs/include
-    ${PROJECT_SOURCE_DIR}/src
 )
 
 # Add header and source files
