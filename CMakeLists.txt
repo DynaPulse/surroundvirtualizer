@@ -23,6 +23,7 @@ set(HEADERS
     ${PROJECT_SOURCE_DIR}/include/headers/portaudio_setup.h
     ${PROJECT_SOURCE_DIR}/include/headers/hrtf_processor.h
     ${PROJECT_SOURCE_DIR}/include/headers/cli_interface.h
+    ${PROJECT_SOURCE_DIR}/include/headers/logging.h
 )
 
 set(SOURCES
@@ -49,21 +50,34 @@ if (NOT OpenAL_FOUND)
     message(FATAL_ERROR "OpenAL not found. Make sure it's installed correctly.")
 endif()
 
+# Set DLL paths
+set(OPENAL_DLL "${PROJECT_SOURCE_DIR}/lib/OpenALlibs/bin/OpenAL32.dll")
+set(PORTAUDIO_DLL "${PROJECT_SOURCE_DIR}/lib/PortAudioLibs/bin/portaudio_x64.dll")
+
 # Add executable
 add_executable(SurroundVirtualizer ${SOURCES} ${HEADERS})
 
 # Link the required libraries to the executable
-target_link_libraries(SurroundVirtualizer
-    ${OPENAL_LIBRARY}
-    ${PORTAUDIO_LIBRARIES}
-    ${PROJECT_SOURCE_DIR}/lib/PortAudioLibs/lib/portaudio_x64.lib
-)
+# Prefer imported targets if available
+if (TARGET OpenAL::OpenAL)
+    target_link_libraries(SurroundVirtualizer OpenAL::OpenAL)
+else()
+    target_link_libraries(SurroundVirtualizer ${OPENAL_LIBRARY})
+endif()
+if (TARGET PortAudio::PortAudio)
+    target_link_libraries(SurroundVirtualizer PortAudio::PortAudio)
+else()
+    target_link_libraries(SurroundVirtualizer ${PORTAUDIO_LIBRARIES} ${PROJECT_SOURCE_DIR}/lib/PortAudioLibs/lib/portaudio_x64.lib)
+endif()
 
-# Ensure portaudio_x64.dll is copied to the output directory (only to build/bin/Release)
+# Copy DLLs after build (for all configs)
 add_custom_command(TARGET SurroundVirtualizer POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${PORTAUDIO_DLL}
-    $<TARGET_FILE_DIR:SurroundVirtualizer>
+        ${OPENAL_DLL}
+        $<TARGET_FILE_DIR:SurroundVirtualizer>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${PORTAUDIO_DLL}
+        $<TARGET_FILE_DIR:SurroundVirtualizer>
 )
 
 # Set output directories for the build

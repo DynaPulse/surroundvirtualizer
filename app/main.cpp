@@ -3,31 +3,60 @@
 #include "portaudio_setup.h"
 #include "cli_interface.h"
 #include "hrtf_processor.h"
+#include "logging.h"
 #include <iostream>
 #include <vector>
 
-int main() {
+constexpr int kBlockSize = 256;
+constexpr int kInputChannels = 8;
+constexpr int kOutputChannels = 2;
+
+int main(int argc, char* argv[]) {
+    // Help option
+    if (argc > 1 && (std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h")) {
+        std::cout << "Surround Virtualizer\n";
+        std::cout << "Usage: SurroundVirtualizer [options]\n";
+        std::cout << "Options:\n  --help, -h    Show this help message\n";
+        return 0;
+    }
     CLIInterface cli;
     cli.displayMenu();
+    // --- Virtual Device Pipeline ---
+    Logger::log("Select the virtual (input/capture) device (e.g., VB-Cable, Virtual Audio Cable) that will receive audio from your game or media player.");
+    cli.listInputDevices();
+    auto inputDeviceList = cli.getAvailableInputDevices();
+    int selectedInputDeviceIndex = cli.getSelectedInputDeviceIndex(inputDeviceList);
+    if (selectedInputDeviceIndex == -1) {
+        Logger::log("No input device selected. Exiting.", Logger::WARNING);
+        return -1;
+    }
+    Logger::log("Select the real output (playback) device (your headphones or speakers).", Logger::INFO);
     cli.listPlaybackDevices();
-    auto deviceList = cli.getAvailablePlaybackDevices();
-    int selectedDeviceIndex = cli.getSelectedDeviceIndex(deviceList);
-    if (selectedDeviceIndex == -1) {
+    auto outputDeviceList = cli.getAvailablePlaybackDevices();
+    int selectedOutputDeviceIndex = cli.getSelectedDeviceIndex(outputDeviceList);
+    if (selectedOutputDeviceIndex == -1) {
+        Logger::log("No output device selected. Exiting.", Logger::WARNING);
         return -1;
     }
     std::string hrtfFilePath = cli.getHRTFFilePath();
 
+    // --- User Instructions ---
+    Logger::log("\nINSTRUCTIONS:", Logger::INFO);
+    Logger::log("1. Install a virtual audio device such as VB-Cable or Virtual Audio Cable.", Logger::INFO);
+    Logger::log("2. Set the virtual device as the default output in Windows or in your game/media player.", Logger::INFO);
+    Logger::log("3. This application will capture audio from the virtual device, process it, and output stereo to your real device.", Logger::INFO);
+
     // Initialize OpenAL for spatial audio processing
     OpenALSetup openAL;
-    if (!openAL.initialize(hrtfFilePath, deviceList[selectedDeviceIndex])) {
-        std::cerr << "Error: Failed to initialize OpenAL with HRTF." << std::endl;
+    if (!openAL.initialize(hrtfFilePath, outputDeviceList[selectedOutputDeviceIndex])) {
+        Logger::log("Failed to initialize OpenAL with HRTF.", Logger::ERROR);
         return -1;
     }
 
-    // Initialize PortAudio for capturing and playback
+    // Initialize PortAudio for capturing from virtual device and playback to real device
     PortAudioSetup portAudio;
-    if (!portAudio.initialize(8, 2, selectedDeviceIndex)) { // 8 input channels (7.1.4), 2 output channels (stereo)
-        std::cerr << "Error: Failed to initialize PortAudio." << std::endl;
+    if (!portAudio.initialize(kInputChannels, kOutputChannels, selectedOutputDeviceIndex, selectedInputDeviceIndex)) {
+        Logger::log("Failed to initialize PortAudio.", Logger::ERROR);
         return -1;
     }
 
@@ -35,20 +64,20 @@ int main() {
     HRTFProcessor hrtfProcessor(hrtfFilePath);
 
     // Buffers for input and output audio
-    float inputBuffer[256 * 8]; // 8 channels
-    float outputBuffer[256 * 2]; // 2 channels
+    float inputBuffer[kBlockSize * kInputChannels];
+    float outputBuffer[kBlockSize * kOutputChannels];
     PaStream* stream = portAudio.getStream();
 
     // Real-time processing loop
     while (true) {
-        PaError err = Pa_ReadStream(stream, inputBuffer, 256);
+        PaError err = Pa_ReadStream(stream, inputBuffer, kBlockSize);
         if (err != paNoError) {
-            std::cerr << "Error: Failed to read from input stream: " << Pa_GetErrorText(err) << std::endl;
+            Logger::log(std::string("Failed to read from input stream: ") + Pa_GetErrorText(err), Logger::ERROR);
             break;
         }
 
         // Convert the input buffer to a vector for processing
-        std::vector<float> input(inputBuffer, inputBuffer + 256 * 8);
+        std::vector<float> input(inputBuffer, inputBuffer + kBlockSize * kInputChannels);
         std::vector<float> output;
 
         // Process the audio using HRTFProcessor
@@ -59,9 +88,9 @@ int main() {
             outputBuffer[i] = output[i];
         }
 
-        err = Pa_WriteStream(stream, outputBuffer, 256);
+        err = Pa_WriteStream(stream, outputBuffer, kBlockSize);
         if (err != paNoError) {
-            std::cerr << "Error: Failed to write to output stream: " << Pa_GetErrorText(err) << std::endl;
+            Logger::log(std::string("Failed to write to output stream: ") + Pa_GetErrorText(err), Logger::ERROR);
             break;
         }
     }

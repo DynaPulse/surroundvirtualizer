@@ -28,6 +28,14 @@ CMakeFiles/
 cmake_install.cmake
 Makefile
 
-# Git-related metadata
-.git/
-.githubworkflows
+# GitHub workflows
+.github/
+!.github/workflows/
+
+# System files
+Thumbs.db
+.DS_Store
+
+# Ignore HRTF cache or temp files
+HRTF Files/*.tmp
+HRTF Files/*.cache

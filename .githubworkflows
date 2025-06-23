@@ -8,36 +8,55 @@ on:
 
 jobs:
   analyze:
-    name: Analyze
+    name: CodeQL Analyze (C/C++)
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Set up CodeQL
-        uses: github/codeql-action/setup-codeql@v1
+      - name: Set up MSVC Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v1
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v3
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
         with:
           languages: c-cpp
-          build-mode: manual
+          build-mode: autobuild
 
-      - name: Set up build environment
-        run: |
-          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --yes
-          choco install visualstudio2019community --packageparameters "--add Microsoft.VisualStudio.Workload.ManagedDesktop" --yes
-          choco install visualstudio2019buildtools --yes
-
-    - name: Set up MSBuild
-      uses: microsoft/setup-msbuild@v1
-
-      - name: Build
+      - name: Configure CMake
         run: |
           mkdir build
           cd build
-          cmake .. -G "Visual Studio 16 2019"
+          cmake -G "Ninja" ..
+
+      - name: Build
+        run: |
+          cd build
           cmake --build . --config Release
 
+      - name: Copy OpenAL32.dll
+        run: |
+          if (Test-Path "${{ github.workspace }}/lib/OpenALlibs/bin/OpenAL32.dll") {
+            Copy-Item "${{ github.workspace }}/lib/OpenALlibs/bin/OpenAL32.dll" "${{ github.workspace }}/install_app/bin/" -Force
+          }
+
+      - name: Copy portaudio_x64.dll
+        run: |
+          if (Test-Path "${{ github.workspace }}/lib/PortAudioLibs/bin/portaudio_x64.dll") {
+            Copy-Item "${{ github.workspace }}/lib/PortAudioLibs/bin/portaudio_x64.dll" "${{ github.workspace }}/install_app/bin/" -Force
+          }
+
       - name: Run CodeQL Analysis
-        uses: github/codeql-action/analyze@v1
+        uses: github/codeql-action/analyze@v3
         with:
           category: "security"
           upload: true

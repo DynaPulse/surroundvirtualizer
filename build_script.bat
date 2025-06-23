@@ -29,15 +29,16 @@ if exist "%CURRENT_DIR%install_app" (
 )
 
 REM Step 3: Create a new build directory
-echo Creating build directory...
-mkdir "%CURRENT_DIR%build"
-if ERRORLEVEL 1 (
-    echo Failed to create build directory. Exiting...
-    exit /b 1
+if not exist "%CURRENT_DIR%build" (
+    echo Creating build directory...
+    mkdir "%CURRENT_DIR%build"
+    if ERRORLEVEL 1 (
+        echo Failed to create build directory. Exiting...
+        exit /b 1
+    )
 )
 
 REM Step 4: Change to the build directory
-echo Changing to build directory...
 cd "%CURRENT_DIR%build"
 if ERRORLEVEL 1 (
     echo Failed to change to build directory. Exiting...
@@ -45,15 +46,24 @@ if ERRORLEVEL 1 (
 )
 
 REM Step 5: Run cmake to configure the project
-echo Running cmake...
-cmake ..
+if exist "CMakeCache.txt" del /f /q CMakeCache.txt
+if exist "CMakeFiles" rmdir /s /q CMakeFiles
+
+REM Prefer Ninja if available
+where ninja >nul 2>nul
+if %ERRORLEVEL%==0 (
+    echo Ninja detected, using Ninja generator...
+    cmake -G "Ninja" ..
+) else (
+    echo Running cmake with default generator...
+    cmake ..
+)
 if ERRORLEVEL 1 (
     echo cmake configuration failed. Exiting...
     exit /b 1
 )
 
 REM Step 6: Build the project
-echo Building the project...
 cmake --build . --config Release
 if ERRORLEVEL 1 (
     echo Build failed. Exiting...
@@ -61,34 +71,32 @@ if ERRORLEVEL 1 (
 )
 
 REM Step 7: Create a new install directory
-echo Creating install directory...
-mkdir "%CURRENT_DIR%install_app"
-if ERRORLEVEL 1 (
-    echo Failed to create install directory. Exiting...
-    exit /b 1
+if not exist "%CURRENT_DIR%install_app" (
+    echo Creating install directory...
+    mkdir "%CURRENT_DIR%install_app"
+    if ERRORLEVEL 1 (
+        echo Failed to create install directory. Exiting...
+        exit /b 1
+    )
 )
 
 REM Step 8: Install the project
-echo Installing the project...
 cmake --install . --prefix "%CURRENT_DIR%install_app"
 if ERRORLEVEL 1 (
     echo Installation failed. Exiting...
     exit /b 1
 )
 
-REM Step 9: Copy portaudio_x64.dll to the install directory
-echo Copying portaudio_x64.dll...
-copy "%CURRENT_DIR%lib\PortAudioLibs\bin\portaudio_x64.dll" "%CURRENT_DIR%install_app\bin\"
-if ERRORLEVEL 1 (
-    echo Failed to copy portaudio_x64.dll. Exiting...
-    exit /b 1
-)
+REM Step 9: Copy DLLs to the install directory
+if exist "%CURRENT_DIR%lib\PortAudioLibs\bin\portaudio_x64.dll" copy "%CURRENT_DIR%lib\PortAudioLibs\bin\portaudio_x64.dll" "%CURRENT_DIR%install_app\bin\" /Y
+if exist "%CURRENT_DIR%lib\OpenALlibs\bin\OpenAL32.dll" copy "%CURRENT_DIR%lib\OpenALlibs\bin\OpenAL32.dll" "%CURRENT_DIR%install_app\bin\" /Y
 
 REM Step 10: Launch SurroundVirtualizer.exe
-echo Launching SurroundVirtualizer.exe...
-start "" "%CURRENT_DIR%install_app\bin\SurroundVirtualizer.exe"
-if ERRORLEVEL 1 (
-    echo Failed to launch SurroundVirtualizer.exe. Exiting...
+if exist "%CURRENT_DIR%install_app\bin\SurroundVirtualizer.exe" (
+    echo Launching SurroundVirtualizer.exe...
+    start "" "%CURRENT_DIR%install_app\bin\SurroundVirtualizer.exe"
+) else (
+    echo SurroundVirtualizer.exe not found in install_app/bin. Exiting...
     exit /b 1
 )
 
