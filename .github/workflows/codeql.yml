@@ -60,6 +60,11 @@ jobs:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
 
+    - name: Ensure build directory exists
+      shell: bash
+      run: |
+        mkdir -p build
+
     - name: Build (MinGW GCC/G++)
       if: matrix.build-mode == 'manual'
       shell: bash
