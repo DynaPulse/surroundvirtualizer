@@ -62,6 +62,7 @@ jobs:
 
     - name: Build (MinGW GCC/G++)
       if: matrix.build-mode == 'manual'
+      shell: bash
       run: |
         g++ -std=c++17 -Iinclude/headers -Ilib/OpenALlibs/include -Ilib/PortAudioLibs/include \
           src/cli_interface.cpp src/hrtf_library.cpp src/hrtf_processor.cpp src/openal_setup.cpp src/portaudio_setup.cpp app/main.cpp \
