@@ -45,45 +45,55 @@ if ERRORLEVEL 1 (
     exit /b 1
 )
 
-REM Step 5: Run cmake to configure the project
-if exist "CMakeCache.txt" del /f /q CMakeCache.txt
-if exist "CMakeFiles" rmdir /s /q CMakeFiles
-
-REM Prefer Ninja if available
-where ninja >nul 2>nul
-if %ERRORLEVEL%==0 (
-    echo Ninja detected, using Ninja generator...
-    cmake -G "Ninja" ..
-) else (
-    echo Running cmake with default generator...
-    cmake ..
-)
+REM Step 5: Compile all source files with gcc and gcc directly
+cd "%CURRENT_DIR%/src"
 if ERRORLEVEL 1 (
-    echo cmake configuration failed. Exiting...
+    echo Failed to change to src directory. Exiting...
     exit /b 1
 )
 
-REM Step 6: Build the project
-cmake --build . --config Release
+REM Compile all .cpp files into object files
+for %%f in (*.cpp) do g++ -c "%%f" -I"%CURRENT_DIR%include/headers" -I"%CURRENT_DIR%lib/PortAudioLibs/include" -I"%CURRENT_DIR%lib/OpenALlibs/include" -o "%%~nf.o"
 if ERRORLEVEL 1 (
-    echo Build failed. Exiting...
+    echo Compilation failed. Exiting...
+    exit /b 1
+)
+
+cd "%CURRENT_DIR%/app"
+g++ -c main.cpp -I"%CURRENT_DIR%include/headers" -I"%CURRENT_DIR%lib/PortAudioLibs/include" -I"%CURRENT_DIR%lib/OpenALlibs/include" -o main.o
+if ERRORLEVEL 1 (
+    echo Compilation of main.cpp failed. Exiting...
+    exit /b 1
+)
+
+cd "%CURRENT_DIR%/src"
+move *.o "%CURRENT_DIR%/build/"
+cd "%CURRENT_DIR%/app"
+move main.o "%CURRENT_DIR%/build/"
+cd "%CURRENT_DIR%/build"
+
+REM Link all object files into the final executable
+
+g++ main.o openal_setup.o portaudio_setup.o hrtf_processor.o cli_interface.o -o SurroundVirtualizer -L"%CURRENT_DIR%lib/PortAudioLibs/lib" -L"%CURRENT_DIR%lib/OpenALlibs/lib" -lportaudio_x64 -lOpenAL32
+if ERRORLEVEL 1 (
+    echo Linking failed. Exiting...
     exit /b 1
 )
 
 REM Step 7: Create a new install directory
-if not exist "%CURRENT_DIR%install_app" (
-    echo Creating install directory...
-    mkdir "%CURRENT_DIR%install_app"
+if not exist "%CURRENT_DIR%install_app\bin" (
+    echo Creating install_app/bin directory...
+    mkdir "%CURRENT_DIR%install_app\bin"
     if ERRORLEVEL 1 (
-        echo Failed to create install directory. Exiting...
+        echo Failed to create install_app/bin directory. Exiting...
         exit /b 1
     )
 )
 
-REM Step 8: Install the project
-cmake --install . --prefix "%CURRENT_DIR%install_app"
+REM Step 8: Copy the executable to the install directory
+copy SurroundVirtualizer.exe "%CURRENT_DIR%install_app\bin\" /Y
 if ERRORLEVEL 1 (
-    echo Installation failed. Exiting...
+    echo Failed to copy SurroundVirtualizer.exe. Exiting...
     exit /b 1
 )
 

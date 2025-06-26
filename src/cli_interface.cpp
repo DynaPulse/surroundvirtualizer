@@ -64,11 +64,8 @@ int CLIInterface::getSelectedDeviceIndex(const std::vector<std::string>& deviceL
 }
 
 std::string CLIInterface::getHRTFFilePath() {
-    std::string filePath;
-    std::cout << "Enter the path to the HRTF file: ";
-    std::cin.ignore();
-    std::getline(std::cin, filePath);
-    return filePath;
+    // Return the default HRTF file path from the repository
+    return "HRTF Files/SADIE_D01/SADIE_D01-44100.mhr";
 }
 
 std::vector<std::string> CLIInterface::getAvailableInputDevices() {
